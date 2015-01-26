@@ -15,6 +15,8 @@ If that works you should be good to go.
 After installing, type `pitchfork help` for usage details.
 
 ### Future
+* Search for reviews by artist
+* Display latest music news
 * Play songs on Soundcloud embedded in reviews right from your shell!
 * Ability to get details for only one review by ID
 * Your ideas? Talk to me [@ddw17](http://twitter.com/ddw17)
