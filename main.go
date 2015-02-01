@@ -194,17 +194,17 @@ func main() {
 			Usage: "A template for how you want the reviews displayed (in quotes)",
 		},
 		cli.StringFlag{
-			Name:  "d",
+			Name:  "days, d",
 			Value: "0",
 			Usage: "Days since the last set of reviews to return",
 		},
 		cli.StringFlag{
-			Name:  "s",
+			Name:  "score, s",
 			Value: "0.0",
 			Usage: "Minimum score for reviews to return",
 		},
 		cli.StringFlag{
-			Name:  "n",
+			Name:  "num, n",
 			Value: "5",
 			Usage: "Number of news articles to return (max of 10)",
 		},
