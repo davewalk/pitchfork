@@ -26,6 +26,12 @@ type Review struct {
 	Score      float64
 }
 
+// NewsArticle includes the details of a news article on the Pitchfork.com homepage.
+type NewsArticle struct {
+	Title string
+	Url   string
+}
+
 type response struct {
 	review Review
 	err    error
@@ -41,6 +47,44 @@ const baseurl = "http://pitchfork.com"
 func splitMetadata(str string) (metadata []string) {
 	metadata = strings.Split(str, ";")
 	return metadata
+}
+
+func parseNewsArticle(s *goquery.Selection) (newsarticle NewsArticle) {
+	title := s.Find(".info h1 a").Text()
+	url, _ := s.Find(".info h1 a").Attr("href")
+
+	a := NewsArticle{
+		Title: title,
+		Url:   baseurl + url,
+	}
+
+	return a
+}
+
+func getNews(count string) (articles []NewsArticle, err error) {
+	var countNum int
+	if countNum, err = strconv.Atoi(count); err != nil {
+		return
+	}
+	if countNum > 10 {
+		err = errors.New("Sorry, I can only get the last 10 news articles.")
+		return
+	}
+
+	doc, err := goquery.NewDocument(baseurl + "/news")
+	if err != nil {
+		return
+	}
+
+	doc.Find("#main .object-list .player-target").Each(func(i int, s *goquery.Selection) {
+		if i < countNum {
+			var article NewsArticle
+			article = parseNewsArticle(s)
+			articles = append(articles, article)
+		}
+	})
+
+	return articles, err
 }
 
 func getReviews(daysStr string) (reviews []Review, err error) {
@@ -142,12 +186,12 @@ func main() {
 	app.Usage = "A Pitchfork.com reader in your shell"
 	app.Author = "Dave Walk (@ddw17)"
 	app.Email = "daviddwalk@gmail.com"
-	app.Version = "0.1.0"
+	app.Version = "0.2.0"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "t",
 			Value: "{{.Artist}}: {{.Album}} [{{.Score}}] ({{.Url}})",
-			Usage: "A template for how you want the results displayed (in quotes)",
+			Usage: "A template for how you want the reviews displayed (in quotes)",
 		},
 		cli.StringFlag{
 			Name:  "d",
@@ -159,28 +203,53 @@ func main() {
 			Value: "0.0",
 			Usage: "Minimum score for reviews to return",
 		},
+		cli.StringFlag{
+			Name:  "n",
+			Value: "5",
+			Usage: "Number of news articles to return (max of 10)",
+		},
 	}
 	app.Action = func(c *cli.Context) {
-		reviews, err := getReviews(c.String("d"))
-		if err != nil {
-			fmt.Println(err)
+		if len(c.Args()) == 0 {
+			reviews, err := getReviews(c.String("d"))
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			var minScore float64
+			minScore, err = strconv.ParseFloat(c.String("s"), 64)
+			if err != nil {
+				fmt.Println("You didn't pass a valid score")
+				return
+			}
+
+			for _, review := range reviews {
+				if review.Score >= minScore {
+					var t *template.Template
+					var tmplStr string = c.String("t") + "\n"
+					t, err = template.New("review").Parse(tmplStr)
+					err = t.Execute(os.Stdout, review)
+					if err != nil {
+						fmt.Println("There was an error with the template you passed:", err)
+					}
+				}
+			}
 		}
 
-		var minScore float64
-		minScore, err = strconv.ParseFloat(c.String("s"), 64)
-		if err != nil {
-			fmt.Println("You didn't pass a valid score")
-			return
-		}
-
-		for _, review := range reviews {
-			if review.Score >= minScore {
-				var t *template.Template
-				var tmplStr string = c.String("t") + "\n"
-				t, err = template.New("review").Parse(tmplStr)
-				err = t.Execute(os.Stdout, review)
+		if len(c.Args()) > 0 {
+			if c.Args()[0] == "news" {
+				news, err := getNews(c.String("n"))
 				if err != nil {
-					fmt.Println("There was an error if a template you passed:", err)
+					fmt.Println(err)
+				}
+
+				for _, article := range news {
+					var t *template.Template
+					t, err = template.New("news").Parse("{{.Title}} ({{.Url}})\n")
+					err = t.Execute(os.Stdout, article)
+					if err != nil {
+						fmt.Println("There was an error with the template you passed:", err)
+					}
 				}
 			}
 		}
