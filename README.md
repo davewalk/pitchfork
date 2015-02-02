@@ -1,4 +1,4 @@
-# pitchfork-cli
+# pitchfork
 
 ![GIF demo of pitchfork-cli](https://github.com/davewalk/pitchfork-cli/blob/master/demo.gif)  
 Finally, a command-line interface to recent album reviews on [Pitchfork.com](http://pitchfork.com). Made during the first ever [Gopher Gala](http://gophergala.com) 1/24-25/15 at Indy Hall in Philadelphia, USA.
