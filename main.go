@@ -43,7 +43,7 @@ func main() {
 		if len(c.Args()) == 0 {
 			reviews, err := pitchfork.GetReviews(c.String("d"))
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println("Hmm, seems like I couldn't get all of the reviews:", err)
 			}
 
 			var minScore float64

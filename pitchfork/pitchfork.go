@@ -41,6 +41,10 @@ func parseNewsArticle(s *goquery.Selection) (newsarticle NewsArticle) {
 func getReviewDetails(q query) {
 	url := baseurl + q.path
 	doc, err := goquery.NewDocument(url)
+	if err != nil {
+		q.responseChan <- response{review: Review{}, err: err}
+		return
+	}
 
 	artist := doc.Find(".info h1 a").First().Text()
 
@@ -54,6 +58,7 @@ func getReviewDetails(q query) {
 	var year int
 	year, err = strconv.Atoi(yearStr)
 	if err != nil {
+		q.responseChan <- response{review: Review{}, err: err}
 		return
 	}
 
@@ -70,6 +75,10 @@ func getReviewDetails(q query) {
 	scoreNum, err = strconv.ParseFloat(score, 64)
 
 	review, err := doc.Find(".object-detail .editorial").First().Html()
+	if err != nil {
+		q.responseChan <- response{review: Review{}, err: err}
+		return
+	}
 	review = strings.Replace(review, "</p>", "\n", 10)
 
 	r := Review{
@@ -165,10 +174,9 @@ func GetReviews(daysStr string) (reviews []Review, err error) {
 		for response := range reschan {
 			if response.err != nil {
 				err = response.err
-				return
+			} else {
+				reviews = append(reviews, response.review)
 			}
-
-			reviews = append(reviews, response.review)
 			wg.Done()
 		}
 	}()
