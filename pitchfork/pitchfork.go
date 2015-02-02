@@ -53,14 +53,8 @@ func getReviewDetails(q query) {
 	albummeta := doc.Find(".info h3").First().Text()
 	albummeta = strings.Trim(albummeta, " ")
 	label := splitMetadata(albummeta)[0]
-	yearStr := splitMetadata(albummeta)[1]
-	yearStr = strings.Trim(yearStr, " ")
-	var year int
-	year, err = strconv.Atoi(yearStr)
-	if err != nil {
-		q.responseChan <- response{review: Review{}, err: err}
-		return
-	}
+	year := splitMetadata(albummeta)[1]
+	year = strings.Trim(year, " ")
 
 	reviewmeta := doc.Find(".info h4").First().Text()
 	reviewmeta = strings.Trim(reviewmeta, " ")
@@ -100,7 +94,7 @@ type Review struct {
 	Artist     string
 	Album      string
 	Label      string
-	Year       int
+	Year       string
 	Reviewdate string
 	Author     string
 	Review     string
