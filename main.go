@@ -7,7 +7,7 @@ import (
 	"text/template"
 
 	"github.com/codegangsta/cli"
-	"github.com/davewalk/pitchfork-cli/pitchfork"
+	"github.com/davewalk/pitchfork/pitchfork"
 )
 
 func main() {
