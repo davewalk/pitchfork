@@ -6,7 +6,7 @@ Finally, a command-line interface to recent album reviews on [Pitchfork.com](htt
 ### Installation
 You'll need Go 1.1+. Then:  
 
-    go get github.com/davewalk/pitchfork-cli
+    go get github.com/davewalk/pitchfork
 
 If that works you should be good to go.
 
