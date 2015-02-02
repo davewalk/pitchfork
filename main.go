@@ -16,7 +16,7 @@ func main() {
 	app.Usage = "A Pitchfork.com reader in your shell"
 	app.Author = "Dave Walk (@ddw17)"
 	app.Email = "daviddwalk@gmail.com"
-	app.Version = "0.2.0"
+	app.Version = "0.2.2"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "t",

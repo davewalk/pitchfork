@@ -63,10 +63,14 @@ func getReviewDetails(q query) {
 	reviewdate := splitMetadata(reviewmeta)[1]
 	reviewdate = strings.Trim(reviewdate, " ")
 
-	score := doc.Find(".score").Text()
+	score := doc.Find(".score").First().Text()
 	score = strings.Trim(score, " ")
 	var scoreNum float64
 	scoreNum, err = strconv.ParseFloat(score, 64)
+	if err != nil {
+		q.responseChan <- response{review: Review{}, err: err}
+		return
+	}
 
 	review, err := doc.Find(".object-detail .editorial").First().Html()
 	if err != nil {
