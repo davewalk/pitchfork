@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,6 +10,98 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/davewalk/pitchfork/pitchfork"
 )
+
+func validateArgs(c *cli.Context) (err error) {
+	var minScore float64
+	minScore, err = strconv.ParseFloat(c.String("s"), 64)
+	if err != nil {
+		err = errors.New("You didn't pass a valid score")
+	}
+	if minScore < 0.0 || minScore > 10.0 {
+		err = errors.New("The minimum score must be between 0 and 10")
+		return err
+	}
+
+	var days int
+	if days, err = strconv.Atoi(c.String("d")); err != nil {
+		err = errors.New("Not a valid -days value")
+	}
+	days = days + 1
+	if days > 5 {
+		err = errors.New("Sorry, I can only get reviews from the last five days")
+	}
+
+	return err
+}
+
+// A responder takes a request from the user and returns data.
+type responder interface {
+	displayData()
+}
+
+// A defaultResponder returns the latest reviews
+type defaultResponder struct {
+	ctx *cli.Context
+}
+
+func (d defaultResponder) getData() (reviews []pitchfork.Review, err error) {
+	reviews, err = pitchfork.GetReviews(d.ctx.String("d"))
+	return reviews, err
+}
+
+func (d defaultResponder) displayData() {
+	var (
+		minScore float64
+		err      error
+	)
+
+	minScore, _ = strconv.ParseFloat(d.ctx.String("s"), 64)
+
+	reviews, err := d.getData()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, review := range reviews {
+		if review.Score >= minScore {
+			var t *template.Template
+			var tmplStr string = d.ctx.String("t") + "\n"
+			t, err = template.New("review").Parse(tmplStr)
+			err = t.Execute(os.Stdout, review)
+			if err != nil {
+				fmt.Println("There was an error with the template you passed:", err)
+			}
+		}
+	}
+}
+
+// A newsResponder returns the latest news
+type newsResponder struct {
+	ctx *cli.Context
+}
+
+func (n newsResponder) getData() (news []pitchfork.NewsArticle, err error) {
+	news, err = pitchfork.GetNews(n.ctx.String("n"))
+	return news, err
+}
+
+func (n newsResponder) displayData() {
+	news, err := n.getData()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, article := range news {
+		var t *template.Template
+		t, err = template.New("news").Parse("{{.Title}} ({{.Url}})\n")
+		err = t.Execute(os.Stdout, article)
+		if err != nil {
+			fmt.Println("There was an error with the template you passed:", err)
+		}
+	}
+}
 
 func main() {
 	app := cli.NewApp()
@@ -40,49 +133,33 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) {
+		err := validateArgs(c)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		var (
+			r   responder
+			cmd string
+		)
+
 		if len(c.Args()) == 0 {
-			reviews, err := pitchfork.GetReviews(c.String("d"))
-			if err != nil {
-				fmt.Println("Hmm, seems like I couldn't get all of the reviews:", err)
-			}
-
-			var minScore float64
-			minScore, err = strconv.ParseFloat(c.String("s"), 64)
-			if err != nil {
-				fmt.Println("You didn't pass a valid score")
-				return
-			}
-
-			for _, review := range reviews {
-				if review.Score >= minScore {
-					var t *template.Template
-					var tmplStr string = c.String("t") + "\n"
-					t, err = template.New("review").Parse(tmplStr)
-					err = t.Execute(os.Stdout, review)
-					if err != nil {
-						fmt.Println("There was an error with the template you passed:", err)
-					}
-				}
-			}
+			cmd = "default"
+		} else {
+			cmd = c.Args()[0]
 		}
 
-		if len(c.Args()) > 0 {
-			if c.Args()[0] == "news" {
-				news, err := pitchfork.GetNews(c.String("n"))
-				if err != nil {
-					fmt.Println(err)
-				}
-
-				for _, article := range news {
-					var t *template.Template
-					t, err = template.New("news").Parse("{{.Title}} ({{.Url}})\n")
-					err = t.Execute(os.Stdout, article)
-					if err != nil {
-						fmt.Println("There was an error with the template you passed:", err)
-					}
-				}
-			}
+		switch cmd {
+		case "default":
+			r = defaultResponder{c}
+		case "news":
+			r = newsResponder{c}
+		default:
+			fmt.Println("Hmm, that doesn't seem to be a valid command...")
+			return
 		}
+		r.displayData()
 	}
 
 	app.Run(os.Args)
