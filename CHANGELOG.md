@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. It follows [Semantic Versioning](http://semver.org) guidelines. 
 
+## 0.3.1 - 2015-02-11
+### Fixed
+- Multi-word artist names were not working with the search command. This was fixed by taking all command line arguments besides the first and concatenating them into a string to search on.  
+
 ## 0.3.0 - 2015-02-11
 ### Added
 - "search <artist name>" command added for searching past reviews.  

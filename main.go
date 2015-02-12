@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/codegangsta/cli"
@@ -95,12 +96,15 @@ type searchResponder struct {
 }
 
 func (s searchResponder) getData() (reviews []pitchfork.Review, err error) {
-	if len(s.ctx.Args()) < 2 {
+	args := s.ctx.Args()
+	artist := args.Tail()
+	artistStr := strings.Join(artist, "+")
+	if len(args) < 2 {
 		errStr := "Include the name of the artist that you want reviews for."
 		err = errors.New(errStr)
 		return
 	}
-	reviews, err = pitchfork.SearchReviews(s.ctx.Args()[1])
+	reviews, err = pitchfork.SearchReviews(artistStr)
 	return reviews, err
 }
 
@@ -134,7 +138,7 @@ func main() {
 	app.Usage = "A Pitchfork.com reader in your shell"
 	app.Author = "Dave Walk (@ddw17)"
 	app.Email = "daviddwalk@gmail.com"
-	app.Version = "0.3.0"
+	app.Version = "0.3.1"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "t",
