@@ -14,10 +14,10 @@ If that works you should be good to go.
 
 ### Usage
 
-After installing, type `pitchfork help` for usage details.
+After installing, type `pitchfork help` for usage details. Valid commands are `pitchfork`, `pitchfork search` and `pitchfork news`
 
 ### Future
-* Search for reviews by artist
+* ~~Search for reviews by artist~~
 * ~~Display latest music news~~
 * Play songs on Soundcloud embedded in reviews right from your shell!
 * Ability to get details for only one review by ID
