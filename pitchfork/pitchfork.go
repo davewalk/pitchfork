@@ -53,15 +53,21 @@ func getReviewDetails(q query) {
 	albummeta := doc.Find(".info h3").First().Text()
 	albummeta = strings.Trim(albummeta, " ")
 	label := splitMetadata(albummeta)[0]
-	year := splitMetadata(albummeta)[1]
-	year = strings.Trim(year, " ")
+	var year string
+	if len(splitMetadata(albummeta)) > 1 {
+		year = splitMetadata(albummeta)[1]
+		year = strings.Trim(year, " ")
+	}
 
 	reviewmeta := doc.Find(".info h4").First().Text()
 	reviewmeta = strings.Trim(reviewmeta, " ")
 	author := splitMetadata(reviewmeta)[0]
 	author = strings.Trim(author, "By ")
-	reviewdate := splitMetadata(reviewmeta)[1]
-	reviewdate = strings.Trim(reviewdate, " ")
+	var reviewdate string
+	if len(splitMetadata(reviewmeta)) > 1 {
+		reviewdate = splitMetadata(reviewmeta)[1]
+		reviewdate = strings.Trim(reviewdate, " ")
+	}
 
 	score := doc.Find(".score").First().Text()
 	score = strings.Trim(score, " ")
@@ -183,4 +189,41 @@ func GetReviews(daysStr string) (reviews []Review, err error) {
 	close(reschan)
 
 	return reviews, err
+}
+
+// SearchReviews searches for reviews given a query string
+func SearchReviews(queryStr string) (reviews []Review, err error) {
+	var doc *goquery.Document
+	doc, err = goquery.NewDocument(baseurl + "/search/?query=" +
+		queryStr + "&filters=album_reviews")
+	if err != nil {
+		return
+	}
+	reviews = make([]Review, 0)
+
+	reschan := make(chan response)
+	var wg sync.WaitGroup
+
+	doc.Find(".search-group").Eq(1).Find("a").Each(func(i int, s *goquery.Selection) {
+		path, _ := s.Attr("href")
+		q := query{path: path, responseChan: reschan}
+		wg.Add(1)
+		go getReviewDetails(q)
+	})
+
+	go func() {
+		for response := range reschan {
+			if response.err != nil {
+				err = response.err
+			} else {
+				reviews = append(reviews, response.review)
+			}
+			wg.Done()
+		}
+	}()
+
+	wg.Wait()
+	close(reschan)
+
+	return
 }

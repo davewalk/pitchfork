@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. It follows [Semantic Versioning](http://semver.org) guidelines. 
 
+## 0.3.0 - 2015-02-11
+### Added
+- "search <artist name>" command added for searching past reviews.  
+
 ## 0.2.2 - 2015-02-02
 ### Fixed
 - An album's score was not being returned because there were multiple ".score" elements on the review page. This is fixed by only taking the text of the first matched element.
@@ -12,7 +16,7 @@ All notable changes to this project will be documented in this file. It follows 
 
 ## 0.2.0 - 2015-02-01
 ### Added
-- "news" argument added for returning latest Pitchfork news (up to the 10 latest articles)
+- "news" command  added for returning latest Pitchfork news (up to the 10 latest articles)
 - Alternate flags for most flags (see `pitchfork help` for details)
 - Separated elements for extracting data from Pitchfork.com into "pitchfork" package
 

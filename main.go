@@ -30,7 +30,6 @@ func validateArgs(c *cli.Context) (err error) {
 	if days > 5 {
 		err = errors.New("Sorry, I can only get reviews from the last five days")
 	}
-
 	return err
 }
 
@@ -42,6 +41,7 @@ type responder interface {
 // A defaultResponder returns the latest reviews
 type defaultResponder struct {
 	ctx *cli.Context
+	reviewResponder
 }
 
 func (d defaultResponder) getData() (reviews []pitchfork.Review, err error) {
@@ -50,12 +50,7 @@ func (d defaultResponder) getData() (reviews []pitchfork.Review, err error) {
 }
 
 func (d defaultResponder) displayData() {
-	var (
-		minScore float64
-		err      error
-	)
-
-	minScore, _ = strconv.ParseFloat(d.ctx.String("s"), 64)
+	var err error
 
 	reviews, err := d.getData()
 	if err != nil {
@@ -63,17 +58,7 @@ func (d defaultResponder) displayData() {
 		return
 	}
 
-	for _, review := range reviews {
-		if review.Score >= minScore {
-			var t *template.Template
-			var tmplStr string = d.ctx.String("t") + "\n"
-			t, err = template.New("review").Parse(tmplStr)
-			err = t.Execute(os.Stdout, review)
-			if err != nil {
-				fmt.Println("There was an error with the template you passed:", err)
-			}
-		}
-	}
+	d.displayReviews(reviews, d.ctx)
 }
 
 // A newsResponder returns the latest news
@@ -103,13 +88,53 @@ func (n newsResponder) displayData() {
 	}
 }
 
+// A searchResponder returns reviews for a search query
+type searchResponder struct {
+	ctx *cli.Context
+	reviewResponder
+}
+
+func (s searchResponder) getData() (reviews []pitchfork.Review, err error) {
+	if len(s.ctx.Args()) < 2 {
+		errStr := "Include the name of the artist that you want reviews for."
+		err = errors.New(errStr)
+		return
+	}
+	reviews, err = pitchfork.SearchReviews(s.ctx.Args()[1])
+	return reviews, err
+}
+
+func (s searchResponder) displayData() {
+	reviews, _ := s.getData()
+	s.displayReviews(reviews, s.ctx)
+}
+
+type reviewResponder struct {
+}
+
+func (r reviewResponder) displayReviews(reviews []pitchfork.Review, ctx *cli.Context) {
+	var minScore float64
+	minScore, _ = strconv.ParseFloat(ctx.String("s"), 64)
+
+	for _, review := range reviews {
+		if review.Score >= minScore {
+			var tmplStr string = ctx.String("t") + "\n"
+			t, err := template.New("review").Parse(tmplStr)
+			err = t.Execute(os.Stdout, review)
+			if err != nil {
+				fmt.Println("There was an error with the template you passed:", err)
+			}
+		}
+	}
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "Pitchfork"
 	app.Usage = "A Pitchfork.com reader in your shell"
 	app.Author = "Dave Walk (@ddw17)"
 	app.Email = "daviddwalk@gmail.com"
-	app.Version = "0.2.2"
+	app.Version = "0.3.0"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "t",
@@ -152,9 +177,11 @@ func main() {
 
 		switch cmd {
 		case "default":
-			r = defaultResponder{c}
+			r = defaultResponder{c, reviewResponder{}}
 		case "news":
 			r = newsResponder{c}
+		case "search":
+			r = searchResponder{c, reviewResponder{}}
 		default:
 			fmt.Println("Hmm, that doesn't seem to be a valid command...")
 			return
